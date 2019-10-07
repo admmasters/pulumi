@@ -393,8 +393,10 @@ func prettyKeyForProject(k config.Key, proj *workspace.Project) string {
 // structure in the future, we should not change existing fields.
 type configValueJSON struct {
 	// When the value is encrypted and --show-secrets was not passed, the value will not be set.
-	Value  *string `json:"value,omitempty"`
-	Secret bool    `json:"secret"`
+	Value       *string     `json:"value,omitempty"`
+	Secret      bool        `json:"secret"`
+	Object      bool        `json:"object"`
+	ValueObject interface{} `json:"valueObject,omitempty"`
 }
 
 func listConfig(stack backend.Stack, showSecrets bool, jsonOut bool) error {
@@ -428,6 +430,7 @@ func listConfig(stack backend.Stack, showSecrets bool, jsonOut bool) error {
 		for _, key := range keys {
 			entry := configValueJSON{
 				Secret: cfg[key].Secure(),
+				Object: cfg[key].Object(),
 			}
 
 			decrypted, err := cfg[key].Value(decrypter)
@@ -436,11 +439,20 @@ func listConfig(stack backend.Stack, showSecrets bool, jsonOut bool) error {
 			}
 			entry.Value = &decrypted
 
+			if cfg[key].Object() {
+				var obj interface{}
+				if err := json.Unmarshal([]byte(decrypted), &obj); err != nil {
+					return err
+				}
+				entry.ValueObject = obj
+			}
+
 			// If the value was a secret value and we aren't showing secrets, then the above would have set value
 			// to "[secret]" which is reasonable when printing for human display, but for our JSON output, we'd rather
 			// just elide the value.
 			if cfg[key].Secure() && !showSecrets {
 				entry.Value = nil
+				entry.ValueObject = nil
 			}
 
 			configValues[key.String()] = entry
@@ -501,6 +513,15 @@ func getConfig(stack backend.Stack, key config.Key, path, jsonOut bool) error {
 			value := configValueJSON{
 				Value:  &raw,
 				Secret: v.Secure(),
+				Object: v.Object(),
+			}
+
+			if v.Object() {
+				var obj interface{}
+				if err := json.Unmarshal([]byte(raw), &obj); err != nil {
+					return err
+				}
+				value.ValueObject = obj
 			}
 
 			out, err := json.MarshalIndent(value, "", "  ")
