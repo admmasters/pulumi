@@ -143,6 +143,7 @@ func (m Map) Remove(k Key, path bool) error {
 		return nil
 	}
 
+	// Otherwise, lookup the current root value and save it into a temporary map.
 	root := make(map[string]interface{})
 	if val, ok := m[configKey]; ok {
 		obj, err := val.ToObject()
@@ -152,11 +153,14 @@ func (m Map) Remove(k Key, path bool) error {
 		root[configKey.Name()] = obj
 	}
 
+	// Get the value within the object up to the second-to-last path segment.
+	// If not found, exit early.
 	parent, dest, ok := getValueForPath(root, p[:len(p)-1])
 	if !ok {
 		return nil
 	}
 
+	// Remove the last path segment.
 	key := p[len(p)-1]
 	switch t := dest.(type) {
 	case []interface{}:
@@ -384,10 +388,12 @@ func parseKeyPath(k Key) (resource.PropertyPath, Key, error) {
 
 // getValueForPath returns the parent, value, and true if the value is found in source given the path segments in p.
 func getValueForPath(source interface{}, p resource.PropertyPath) (interface{}, interface{}, bool) {
+	// If the source is nil, exit early.
 	if source == nil {
 		return nil, nil, false
 	}
 
+	// Lookup the value by each path segment.
 	var parent interface{}
 	v := source
 	for _, key := range p {
