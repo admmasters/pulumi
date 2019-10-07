@@ -440,6 +440,29 @@ func TestGetSuccess(t *testing.T) {
 	}
 }
 
+func TestGetFail(t *testing.T) {
+	tests := []struct {
+		Key string
+	}{
+		{
+			Key: `my:["foo`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%v", test.Key), func(t *testing.T) {
+			config := make(Map)
+
+			key, err := ParseKey(test.Key)
+			assert.NoError(t, err)
+
+			_, found, err := config.Get(key, true /*path*/)
+			assert.False(t, found)
+			assert.Error(t, err)
+		})
+	}
+}
+
 func TestRemoveSuccess(t *testing.T) {
 	tests := []struct {
 		Key      string
@@ -561,6 +584,10 @@ func TestRemoveFail(t *testing.T) {
 		Key    string
 		Config Map
 	}{
+		{
+			Key:    `my:["foo`,
+			Config: Map{},
+		},
 		{
 			Key: `my:foo.bar`,
 			Config: Map{
