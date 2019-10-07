@@ -478,7 +478,7 @@ func setValue(container, key, value, containerParent, containerParentKey interfa
 //  - if "false", returns boolean false
 //  - if "true", returns boolean true
 //  - if convertible to an int, returns the int
-//  - otherwise, returns the original value as-is
+//  - otherwise, returns the string value
 func adjustObjectValue(v Value) interface{} {
 	contract.Assertf(!v.Object(), "v must not be an Object")
 
